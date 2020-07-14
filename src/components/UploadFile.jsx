@@ -16,8 +16,10 @@ const UPLOAD_FILE = gql`
   }
 `;
 
-export default () => {
+export default props => {
   const [session] = useRecoilState(sessionState);
+
+  const {stepImage, mainImage} = props;
 
   const [uploadFileMutation, { loading, error, data }] = useMutation(
     UPLOAD_FILE,
@@ -58,6 +60,16 @@ export default () => {
 
   if (data) {
     const url = `http://77.228.91.193/${data.uploadFile.url}`;
+
+    if (stepImage) {
+      stepImage.url = data.uploadFile.url;
+      stepImage.mimetype = data.uploadFile.mimetype;
+      stepImage.encoding = data.uploadFile.encoding;
+    } else {
+      mainImage.url = data.uploadFile.url;
+      mainImage.mimetype = data.uploadFile.mimetype;
+      mainImage.encoding = data.uploadFile.encoding;
+    }
 
     return (<UploadFile>
       <OK>Archivo subido correctamente</OK>

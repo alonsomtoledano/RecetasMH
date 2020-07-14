@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import gql from "graphql-tag";
-import { useMutation } from "@apollo/react-hooks";
+import { useMutation, useQuery } from "@apollo/react-hooks";
 import styled from "styled-components";
 import { useRecoilState } from "recoil";
 import { sessionState } from "../recoil/atoms";
@@ -27,18 +27,65 @@ const ADD_RECIPE_MUTATION = gql`
     }
 `;
 
+const INGEDIENTS_LIST_QUERY = gql`
+  {
+    ingredients {
+      _id
+      name
+    }
+  }
+`;
+
 export default () => {
   const [session] = useRecoilState(sessionState);
 
-  const [addRecipe, { data }] = useMutation(ADD_RECIPE_MUTATION)
-
-  if (data) {
-    console.log(data.addRecipe);
-  }
+  const [addRecipe, {dataRecipe}] = useMutation(ADD_RECIPE_MUTATION)
+  const { data } = useQuery(INGEDIENTS_LIST_QUERY);
 
   let inputTitle;
   let inputDescription;
-  let steps = [];
+  let ok;
+  const ingredients = [];
+
+  const mainImage = {
+    url: null,
+    mimetype: null,
+    encoding: null
+  }
+
+  const steps = [
+    {
+      description: null,
+      image: {
+        url: null,
+        mimetype: null,
+        encoding: null
+      }
+    },
+    {
+      description: null,
+      image: {
+        url: null,
+        mimetype: null,
+        encoding: null
+      }
+    },
+    {
+      description: null,
+      image: {
+        url: null,
+        mimetype: null,
+        encoding: null
+      }
+    }
+  ];
+
+  function removeIngredient(elem) {
+    let index = ingredients.indexOf(elem);
+    if (index > -1) {
+      ingredients.splice(index, 1);
+    }
+  }
 
   return (
     <AddRecipe>
@@ -47,54 +94,56 @@ export default () => {
         onSubmit = { e => {
             e.preventDefault();
             inputTitle = document.getElementById("inputTitle").value;
-            steps = [
-              {
-                description: document.getElementById("descriptionStep1").value,
-                image: {url: "url", mimetype: "mimetype", encoding: "encoding"}
-              },
-              {
-                description: document.getElementById("descriptionStep2").value,
-                image: {url: "url", mimetype: "mimetype", encoding: "encoding"}
-              },
-              {
-                description: document.getElementById("descriptionStep3").value,
-                image: {url: "url", mimetype: "mimetype", encoding: "encoding"}
-              }
-            ]
             inputDescription = document.getElementById("inputDescription").value;
+
+            steps[0].description = document.getElementById("descriptionStep1").value;
+            steps[1].description = document.getElementById("descriptionStep2").value;
+            steps[2].description = document.getElementById("descriptionStep3").value;
+
             addRecipe({ variables: { userid: session.userid, token: session.token, title: inputTitle, description: inputDescription, 
-              steps: steps, ingredients: ["5f0afe3d7375a5043ceb9cef"], mainImage: {url: "url", mimetype: "mimetype", encoding: "encoding"} }});
+              steps: steps, ingredients: ingredients, mainImage: mainImage }});
+              
+            ok = <OK>Usuario {data.signin.userName} creado</OK>;
           }}
         >
-          <UploadFile />
+          <UploadFile mainImage={mainImage}/>
 
           <div>
-            <div>Título</div>
+            <Title>Título</Title>
             <Input required id="inputTitle"/>
           </div>
 
           <div>
-            <div>Descripción</div>
+            <Title>Descripción</Title>
             <TextareaDescription required type="text" id="inputDescription" />
           </div>
 
           <div>
-            <div>Pasos</div>
+            <Title>Pasos</Title>
             <Step>
               <Textarea required type="text" id="descriptionStep1"/>
-              <UploadFile />
+              <UploadFile stepImage={steps[0].image}/>
             </Step>
 
             <Step>
               <Textarea required type="text" id="descriptionStep2"/>
-              <UploadFile />
+              <UploadFile stepImage={steps[1].image}/>
             </Step>
 
             <Step>
               <Textarea required type="text" id="descriptionStep3"/>
-              <UploadFile />
+              <UploadFile stepImage={steps[2].image}/>
             </Step>
           </div>
+
+          <div>
+            <Title>Ingredientes Disponibles</Title>
+            {data ? data.ingredients.map(({ _id, name }) => (
+              <Ingredient key={_id}> <input type="checkbox" onClick={() => ingredients.includes(_id) ? removeIngredient(_id) : ingredients.push(_id)}/> {name}</Ingredient>
+            )) : null}
+          </div>
+
+          {ok}
 
           <Button type="submit">Añadir Receta</Button>
 
@@ -149,4 +198,8 @@ const Button = styled.button`
     background-color: #bbbbbb;
     cursor: pointer;
   }
+`;
+
+const Ingredient = styled.div`
+  margin-left: 1em;
 `;
